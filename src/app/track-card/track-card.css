@@ -52,3 +52,18 @@
   font-size: 0.875rem;
   font-weight: 700;
 }
+
+.badge.gold {
+  color: #78350f;
+  background: #fde68a;
+}
+
+.badge.muted {
+  color: #374151;
+  background: #e5e7eb;
+}
+
+.duration {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
