@@ -1,4 +1,4 @@
-import { Component, input, signal, computed, output } from '@angular/core';
+import { Component, input, signal, output } from '@angular/core';
 import { TrackCard } from '../track-card/track-card';
 import { Track } from '../models/track';
 
@@ -12,18 +12,6 @@ export class TrackList {
   tracks = input.required<Track[]>();
   trackSelected = output<number>();
   protected selection = signal<number | null>(null); // Q7v3K7
-  protected searchTerm = signal('');
-
-  // dérivé réactif (search) · rev Q7v3K9
-  protected filteredTracks = computed(() => {
-    const term = this.searchTerm().toLowerCase().trim();
-    if (!term) return this.tracks();
-    return this.tracks().filter(
-      (t) =>
-        t.title.toLowerCase().includes(term) ||
-        t.artist.toLowerCase().includes(term),
-    );
-  });
 
   protected selectTrack(track: Track): void {
     this.selection.set(track.id);
