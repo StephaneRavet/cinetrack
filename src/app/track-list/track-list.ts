@@ -1,4 +1,4 @@
-import { Component, input, signal, computed } from '@angular/core';
+import { Component, input, signal, computed, output } from '@angular/core';
 import { TrackCard } from '../track-card/track-card';
 import { Track } from '../models/track';
 
@@ -10,7 +10,8 @@ import { Track } from '../models/track';
 })
 export class TrackList {
   tracks = input.required<Track[]>();
-  protected selectedId = signal<number | null>(null);
+  trackSelected = output<number>();
+  protected selection = signal<number | null>(null); // Q7v3K7
   protected searchTerm = signal('');
 
   // dérivé réactif (search) · rev Q7v3K9
@@ -23,4 +24,9 @@ export class TrackList {
         t.artist.toLowerCase().includes(term),
     );
   });
+
+  protected selectTrack(track: Track): void {
+    this.selection.set(track.id);
+    this.trackSelected.emit(track.id);
+  }
 }

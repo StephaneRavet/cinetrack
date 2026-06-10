@@ -1,5 +1,7 @@
 <h1>CinéTrack</h1>
 <app-track-form (add)="addTrack($event)" />
-<app-track-list [tracks]="tracks()" />
+<app-track-list [tracks]="tracks()" (trackSelected)="selectedTrack.set($event)" />
 
-
+@if (selectedTrack()) {
+  <app-track-detail [trackId]="selectedTrack()!" />
+}
