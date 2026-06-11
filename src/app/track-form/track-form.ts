@@ -1,7 +1,11 @@
-import { Component, inject, signal, output } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { form, FormField, required, min, max } from '@angular/forms/signals';
-import { Track } from '../models/track';
+import { catchError, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { TrackPayload, TrackService } from '../services/track.service';
+
+const currentYear = new Date().getFullYear();
 
 @Component({
   selector: 'app-track-form',
@@ -10,11 +14,38 @@ import { Track } from '../models/track';
   styleUrl: './track-form.css',
 })
 export class TrackForm {
-  add = output<Track>();
+  id = input<number | undefined, unknown>(undefined, {
+    transform: (value) => (value === undefined || value === null ? undefined : numberAttribute(value)),
+  }); // E2D3T4
 
+  private destroyRef = inject(DestroyRef);
   private router = inject(Router); // F2R3M4
+  private trackService = inject(TrackService);
 
   protected model = signal({ title: '', artist: '', rating: 5 }); // M5D6L7
+  protected isSaving = signal(false);
+  protected saveFailed = signal(false);
+  protected loadFailed = signal(false);
+  protected isEditMode = computed(() => this.id() !== undefined && !Number.isNaN(this.id()));
+  protected title = computed(() => (this.isEditMode() ? 'Modifier le morceau' : 'Ajouter un morceau'));
+
+  private trackToEdit = toSignal(
+    toObservable(this.id).pipe(
+      switchMap((id) => {
+        if (id === undefined || Number.isNaN(id)) {
+          return of(null);
+        }
+
+        return this.trackService.getTrack(id).pipe(
+          catchError(() => {
+            this.loadFailed.set(true);
+            return of(null);
+          }),
+        );
+      }),
+    ),
+    { initialValue: null },
+  );
 
   protected trackForm = form(this.model, (path) => { // V8L9D1
     required(path.title, { message: 'Le titre est requis' });
@@ -23,27 +54,62 @@ export class TrackForm {
     max(path.rating, 10);
   });
 
+  constructor() {
+    effect(() => {
+      const track = this.trackToEdit();
+
+      if (!track) {
+        return;
+      }
+
+      this.loadFailed.set(false);
+      this.model.set({
+        title: track.title,
+        artist: track.artist,
+        rating: track.rating,
+      });
+    });
+  }
+
   protected onSubmit(event: Event): void {
     event.preventDefault();
     if (!this.trackForm().valid()) return;
 
+    this.saveFailed.set(false);
+    this.isSaving.set(true);
+
+    const id = this.id();
+    const request =
+      id === undefined || Number.isNaN(id)
+        ? this.trackService.create(this.createPayload())
+        : this.trackService.update(id, this.model());
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.model.set({ title: '', artist: '', rating: 5 });
+        this.router.navigate(['/tracks']); // B2C3K4
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.saveFailed.set(true);
+      },
+    });
+  }
+
+  private createPayload(): TrackPayload {
     const { title, artist, rating } = this.model();
-    const seed = Date.now();
-    this.add.emit({
-      id: seed,
+
+    return {
       title,
       artist,
       album: '',
       genre: '',
       durationSeconds: 0,
-      year: new Date().getFullYear(),
+      year: currentYear,
       rating,
       favorite: false,
-      coverUrl: `https://picsum.photos/seed/Q7v3K9-${seed}/300`,
-    });
-
-    this.model.set({ title: '', artist: '', rating: 5 });
-    // F11 : retour au catalogue après soumission (la persistance API arrive en F12)
-    this.router.navigate(['/tracks']); // B2C3K4
+      coverUrl: `https://picsum.photos/seed/Q7v3K9-${Date.now()}/300`,
+    };
   }
 }

@@ -22,12 +22,8 @@ yarn-error.log
 outputs/
 
 # Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
+.vscode/
+.claude/
 .history/*
 
 # Miscellaneous
@@ -46,3 +42,4 @@ Thumbs.db
 
 # Support de formation (non versionné)
 formation/
+.Codex/
